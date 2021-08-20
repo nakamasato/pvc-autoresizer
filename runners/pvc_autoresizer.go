@@ -148,6 +148,13 @@ func (w *pvcAutoresizer) resize(ctx context.Context, pvc *corev1.PersistentVolum
 		return nil
 	}
 
+	inodesThreshold, err := convertSizeInBytes(pvc.Annotations[ResizeInodesThresholdAnnotation], vs.CapacityInodeSize, DefaultInodesThreshold)
+	if err != nil {
+		log.V(logLevelWarn).Info("failed to convert threshold annotation", "error", err.Error())
+		// lint:ignore nilerr ignores this because invalid annotations should be allowed.
+		return nil
+	}
+
 	curReq := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 	increase, err := convertSizeInBytes(pvc.Annotations[ResizeIncreaseAnnotation], curReq.Value(), DefaultIncrease)
 	if err != nil {
@@ -170,7 +177,7 @@ func (w *pvcAutoresizer) resize(ctx context.Context, pvc *corev1.PersistentVolum
 		}
 	}
 
-	if threshold > vs.AvailableBytes {
+	if threshold > vs.AvailableBytes || inodesThreshold > vs.AvailableInodeSize {
 		if pvc.Annotations == nil {
 			pvc.Annotations = make(map[string]string)
 		}
