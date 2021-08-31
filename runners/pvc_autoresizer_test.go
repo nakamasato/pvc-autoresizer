@@ -99,39 +99,69 @@ var _ = Describe("test resizer", func() {
 			volumeMode := corev1.PersistentVolumeFilesystem
 
 			testCases := []struct {
-				description   string
-				pvcSizeGi     int64
-				expectSizeGi  int64
-				threshold     string
-				availableByte int64
+				description        string
+				pvcSizeGi          int64
+				expectSizeGi       int64
+				threshold          string
+				availableByte      int64
+				capacityInodeSize  int64
+				availableInodeSize int64
+				inodesThreshold    string
 			}{
 				{
-					description:   "Should resize(absolute value)",
-					pvcSizeGi:     10,
-					expectSizeGi:  11,
-					threshold:     "5Gi",
-					availableByte: 5<<30 - 1,
+					description:        "Should resize(absolute value)",
+					pvcSizeGi:          10,
+					expectSizeGi:       11,
+					threshold:          "5Gi",
+					availableByte:      5<<30 - 1,
+					availableInodeSize: 100,
+					capacityInodeSize:  100,
 				},
 				{
-					description:   "Should not resize(absolute value)",
-					pvcSizeGi:     10,
-					expectSizeGi:  10,
-					threshold:     "5Gi",
-					availableByte: 5 << 30,
+					description:        "Should not resize(absolute value)",
+					pvcSizeGi:          10,
+					expectSizeGi:       10,
+					threshold:          "5Gi",
+					availableByte:      5 << 30,
+					availableInodeSize: 100,
+					capacityInodeSize:  100,
 				},
 				{
-					description:   "Should resize(%)",
-					pvcSizeGi:     10,
-					expectSizeGi:  11,
-					threshold:     "50%",
-					availableByte: 5<<30 - 1,
+					description:        "Should resize(%)",
+					pvcSizeGi:          10,
+					expectSizeGi:       11,
+					threshold:          "50%",
+					availableByte:      5<<30 - 1,
+					availableInodeSize: 100,
+					capacityInodeSize:  100,
 				},
 				{
-					description:   "Should not resize(%)",
-					pvcSizeGi:     10,
-					expectSizeGi:  10,
-					threshold:     "50%",
-					availableByte: 5 << 30,
+					description:        "Should not resize(%)",
+					pvcSizeGi:          10,
+					expectSizeGi:       10,
+					threshold:          "50%",
+					availableByte:      5 << 30,
+					availableInodeSize: 100,
+					capacityInodeSize:  100,
+				},
+				{
+					description:        "Should resize(inode)",
+					pvcSizeGi:          10,
+					expectSizeGi:       11,
+					threshold:          "50%",
+					availableByte:      5<<30 - 1,
+					availableInodeSize: 10,
+					capacityInodeSize:  100,
+				},
+				{
+					description:        "Should resize(inode with annotation)",
+					pvcSizeGi:          10,
+					expectSizeGi:       11,
+					threshold:          "50%",
+					availableByte:      5<<30 - 1,
+					availableInodeSize: 50,
+					capacityInodeSize:  100,
+					inodesThreshold:    "50%",
 				},
 			}
 
@@ -141,18 +171,24 @@ var _ = Describe("test resizer", func() {
 				expectSizeGi := tc.expectSizeGi
 				threshold := tc.threshold
 				availableByte := tc.availableByte
+				availableInodeSize := tc.availableInodeSize
+				capacityInodeSize := tc.capacityInodeSize
+				inodesThreshold := tc.inodesThreshold
 
 				description := fmt.Sprintf(
-					"%s: pvcSizeGi=%d expectSizeGi=%d threshold=%s availableByte=%d",
+					"%s: pvcSizeGi=%d expectSizeGi=%d threshold=%q availableByte=%d availableInodeSize=%d capacityInodeSize=%d inodesThreshold=%q",
 					tc.description,
 					tc.pvcSizeGi,
 					tc.expectSizeGi,
 					tc.threshold,
-					tc.availableByte)
+					tc.availableByte,
+					availableInodeSize,
+					capacityInodeSize,
+					inodesThreshold)
 
 				It(description, func() {
-					createPVC(ctx, pvcNS, pvcName, scName, threshold, increase, pvcSizeGi<<30, limit, volumeMode)
-					setMetrics(pvcNS, pvcName, availableByte, pvcSizeGi<<30)
+					createPVC(ctx, pvcNS, pvcName, scName, threshold, inodesThreshold, increase, pvcSizeGi<<30, limit, volumeMode)
+					setMetrics(pvcNS, pvcName, availableByte, pvcSizeGi<<30, availableInodeSize, capacityInodeSize)
 					testFunc := func() error {
 						var pvc corev1.PersistentVolumeClaim
 						err := k8sClient.Get(ctx, types.NamespacedName{Namespace: pvcNS, Name: pvcName}, &pvc)
@@ -182,9 +218,9 @@ var _ = Describe("test resizer", func() {
 				ctx := context.Background()
 				pvcNS := "default"
 				pvcName := "test-resize-metrics"
-				createPVC(ctx, pvcNS, pvcName, scName, "50%", "20Gi", 10<<30, 100<<30, corev1.PersistentVolumeFilesystem)
+				createPVC(ctx, pvcNS, pvcName, scName, "50%", "", "20Gi", 10<<30, 100<<30, corev1.PersistentVolumeFilesystem)
 				By("running resize", func() {
-					setMetrics(pvcNS, pvcName, 3<<30, 7<<30)
+					setMetrics(pvcNS, pvcName, 3<<30, 7<<30, 2050246, 2050246)
 					Eventually(func() error {
 						var pvc corev1.PersistentVolumeClaim
 						err := k8sClient.Get(ctx, types.NamespacedName{Namespace: pvcNS, Name: pvcName}, &pvc)
@@ -266,7 +302,7 @@ var _ = Describe("test resizer", func() {
 	})
 })
 
-func createPVC(ctx context.Context, ns, name, scName, threshold, increase string, request, limit int64, mode corev1.PersistentVolumeMode) {
+func createPVC(ctx context.Context, ns, name, scName, threshold, inodesThreshold, increase string, request, limit int64, mode corev1.PersistentVolumeMode) {
 	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -288,6 +324,10 @@ func createPVC(ctx context.Context, ns, name, scName, threshold, increase string
 	if len(threshold) != 0 {
 		pvc.Annotations[ResizeThresholdAnnotation] = threshold
 	}
+	if len(inodesThreshold) != 0 {
+		pvc.Annotations[ResizeInodesThresholdAnnotation] = inodesThreshold
+	}
+
 	if len(increase) != 0 {
 		pvc.Annotations[ResizeIncreaseAnnotation] = increase
 	}
@@ -306,12 +346,14 @@ func createPVC(ctx context.Context, ns, name, scName, threshold, increase string
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func setMetrics(ns, name string, available, capacity int64) {
+func setMetrics(ns, name string, availableBytes, capacityBytes, availableInodeSize, capacityInodeSize int64) {
 	promClient.setResponce(types.NamespacedName{
 		Namespace: ns,
 		Name:      name,
 	}, &VolumeStats{
-		AvailableBytes: available,
-		CapacityBytes:  capacity,
+		AvailableBytes:     availableBytes,
+		CapacityBytes:      capacityBytes,
+		AvailableInodeSize: availableInodeSize,
+		CapacityInodeSize:  capacityInodeSize,
 	})
 }

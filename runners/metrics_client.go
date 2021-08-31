@@ -64,13 +64,11 @@ func (c *prometheusClient) GetMetrics(ctx context.Context) (map[types.Namespaced
 		return nil, err
 	}
 
-	// TODO query
 	availableInodeSize, err := c.getMetricValues(ctx, inodesAvailableQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO query
 	capacityInodeSize, err := c.getMetricValues(ctx, inodesCapacityQuery)
 	if err != nil {
 		return nil, err
