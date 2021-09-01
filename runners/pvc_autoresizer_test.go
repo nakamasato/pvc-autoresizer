@@ -90,6 +90,66 @@ var _ = Describe("test resizer", func() {
 		})
 	})
 
+	Context("test convertSize", func() {
+		type input struct {
+			valStr     string
+			capacity   int64
+			defaultVal string
+		}
+		type testCase struct {
+			input  input
+			expect int64
+		}
+		correctCases := []testCase{
+			{
+				input: input{
+					valStr:     "",
+					capacity:   100,
+					defaultVal: "10%",
+				},
+				expect: 10,
+			},
+			{
+				input: input{
+					valStr:     "20%",
+					capacity:   100,
+					defaultVal: "10%",
+				},
+				expect: 20,
+			},
+		}
+		errorCases := []input{
+			{
+				valStr:     "10",
+				capacity:   100,
+				defaultVal: "10%",
+			},
+			{
+				valStr:     "-10%",
+				capacity:   100,
+				defaultVal: "10%",
+			},
+			{
+				valStr:     "hoge",
+				capacity:   100,
+				defaultVal: "10%",
+			},
+		}
+		It("should be ok", func() {
+			for _, val := range correctCases {
+				res, err := convertSize(val.input.valStr, val.input.capacity, val.input.defaultVal)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).To(Equal(val.expect))
+			}
+		})
+		It("should be error", func() {
+			for _, val := range errorCases {
+				_, err := convertSize(val.valStr, val.capacity, val.defaultVal)
+				Expect(err).To(HaveOccurred(), "%+v", val)
+			}
+		})
+	})
+
 	Context("resize", func() {
 		Context("parameter tests", func() {
 			ctx := context.Background()

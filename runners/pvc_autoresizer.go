@@ -148,7 +148,7 @@ func (w *pvcAutoresizer) resize(ctx context.Context, pvc *corev1.PersistentVolum
 		return nil
 	}
 
-	inodesThreshold, err := convertSizeInBytes(pvc.Annotations[ResizeInodesThresholdAnnotation], vs.CapacityInodeSize, DefaultInodesThreshold)
+	inodesThreshold, err := convertSize(pvc.Annotations[ResizeInodesThresholdAnnotation], vs.CapacityInodeSize, DefaultInodesThreshold)
 	if err != nil {
 		log.V(logLevelWarn).Info("failed to convert threshold annotation", "error", err.Error())
 		// lint:ignore nilerr ignores this because invalid annotations should be allowed.
@@ -279,6 +279,27 @@ func convertSizeInBytes(valStr string, capacity int64, defaultVal string) (int64
 		return 0, fmt.Errorf("annotation value should be positive: %s", valStr)
 	}
 	return val, nil
+}
+
+func convertSize(valStr string, capacity int64, defaultVal string) (int64, error) {
+	if len(valStr) == 0 {
+		valStr = defaultVal
+	}
+
+	if !strings.HasSuffix(valStr, "%") {
+		return 0, fmt.Errorf("annotation value should be in percent notation: %s", valStr)
+	}
+
+	rate, err := strconv.ParseFloat(strings.TrimRight(valStr, "%"), 64)
+	if err != nil {
+		return 0, err
+	}
+	if rate < 0 {
+		return 0, fmt.Errorf("annotation value should be positive: %s", valStr)
+	}
+
+	res := int64(float64(capacity) * rate / 100.0)
+	return res, nil
 }
 
 func pvcStorageLimit(pvc *corev1.PersistentVolumeClaim) (resource.Quantity, error) {
