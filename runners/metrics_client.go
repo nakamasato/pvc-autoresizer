@@ -81,14 +81,10 @@ func (c *prometheusClient) GetMetrics(ctx context.Context) (map[types.Namespaced
 		} else {
 			vs.CapacityBytes = cb
 		}
-		if ais, ok := availableInodeSize[key]; !ok {
-			continue
-		} else {
+		if ais, ok := availableInodeSize[key]; ok {
 			vs.AvailableInodeSize = ais
 		}
-		if cis, ok := capacityInodeSize[key]; !ok {
-			continue
-		} else {
+		if cis, ok := capacityInodeSize[key]; ok {
 			vs.CapacityInodeSize = cis
 		}
 		volumeStatsMap[key] = vs
