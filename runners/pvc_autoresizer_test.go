@@ -223,6 +223,16 @@ var _ = Describe("test resizer", func() {
 					capacityInodeSize:  100,
 					inodesThreshold:    "50%",
 				},
+				{
+					description:        "Should not resize(inode)",
+					pvcSizeGi:          10,
+					expectSizeGi:       10,
+					threshold:          "50%",
+					availableByte:      5 << 30,
+					availableInodeSize: 9,
+					capacityInodeSize:  100,
+					inodesThreshold:    "0%",
+				},
 			}
 
 			for i, tc := range testCases {
