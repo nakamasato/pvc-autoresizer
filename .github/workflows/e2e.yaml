@@ -6,6 +6,7 @@ on:
       - 'main'
 jobs:
   e2e-k8s:
+    if: github.event.pull_request.draft == false
     name: e2e-k8s
     runs-on: ubuntu-20.04
     strategy:

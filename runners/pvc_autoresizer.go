@@ -117,7 +117,7 @@ func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
 			return nil
 		}
 		for _, pvc := range pvcs.Items {
-			w.log.Info("checking pvc.", "pvc", pvc.ObjectMeta.Name)
+			w.log.Info("checking pvc.", "sc", sc.ObjectMeta.Name, "pvc", pvc.ObjectMeta.Name)
 			if !isTargetPVC(&pvc) {
 				w.log.Info("pvc isTargetPVC false.", "pvc", pvc.ObjectMeta.Name)
 				continue
