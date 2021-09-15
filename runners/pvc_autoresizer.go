@@ -128,6 +128,7 @@ func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
 				Name:      pvc.Name,
 			}
 			if _, ok := vsMap[namespacedName]; !ok {
+				w.log.Info("pvc vsMap[namespacedName] not ok.", "pvc", pvc.Name)
 				continue
 			}
 			err = w.resize(ctx, &pvc, vsMap[namespacedName])
