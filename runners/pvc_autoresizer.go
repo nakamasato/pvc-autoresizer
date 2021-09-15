@@ -116,10 +116,11 @@ func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
 			w.log.Error(err, "list pvc failed")
 			return nil
 		}
+		w.log.Info("pvcs.items count", "sc", sc.Name, "items", len(pvcs.Items))
 		for _, pvc := range pvcs.Items {
-			w.log.Info("checking pvc.", "sc", sc.ObjectMeta.Name, "pvc", pvc.ObjectMeta.Name)
+			w.log.Info("checking pvc.", "sc", sc.Name, "pvc", pvc.Name)
 			if !isTargetPVC(&pvc) {
-				w.log.Info("pvc isTargetPVC false.", "pvc", pvc.ObjectMeta.Name)
+				w.log.Info("pvc isTargetPVC false.", "pvc", pvc.Name)
 				continue
 			}
 			namespacedName := types.NamespacedName{
@@ -138,7 +139,7 @@ func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
 			}
 		}
 	}
-
+	w.log.Info("reconcile completed.")
 	return nil
 }
 
