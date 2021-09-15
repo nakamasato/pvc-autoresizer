@@ -94,6 +94,7 @@ func (w *pvcAutoresizer) getStorageClassList(ctx context.Context) (*storagev1.St
 }
 
 func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
+	w.log.Info("reconcile started.")
 	scs, err := w.getStorageClassList(ctx)
 	if err != nil {
 		w.log.Error(err, "getStorageClassList failed")
@@ -106,6 +107,7 @@ func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
 		return nil
 	}
 
+	w.log.Info("scs.items count", "items", len(scs.Items))
 	for _, sc := range scs.Items {
 		var pvcs corev1.PersistentVolumeClaimList
 		err = w.client.List(ctx, &pvcs, client.MatchingFields(map[string]string{storageClassNameIndexKey: sc.Name}))
@@ -115,7 +117,9 @@ func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
 			return nil
 		}
 		for _, pvc := range pvcs.Items {
+			w.log.Info("checking pvc.", "pvc", pvc.ObjectMeta.Name)
 			if !isTargetPVC(&pvc) {
+				w.log.Info("pvc isTargetPVC false.", "pvc", pvc.ObjectMeta.Name)
 				continue
 			}
 			namespacedName := types.NamespacedName{
