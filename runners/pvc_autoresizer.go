@@ -106,6 +106,9 @@ func (w *pvcAutoresizer) reconcile(ctx context.Context) error {
 		w.log.Error(err, "metricsClient.GetMetrics failed")
 		return nil
 	}
+	for key, val := range vsMap {
+		w.log.Info("vsMap", "key", key, "val", val)
+	}
 
 	w.log.Info("scs.items count", "items", len(scs.Items))
 	for _, sc := range scs.Items {
