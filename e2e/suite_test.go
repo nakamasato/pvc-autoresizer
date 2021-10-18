@@ -347,9 +347,17 @@ var _ = Describe("pvc-autoresizer", func() {
 		// delete pod
 		stdout, stderr, err = kubectl("-n", testNamespace, "delete", "pod", pvcName)
 		Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
+		// delete pvc
+		stdout, stderr, err = kubectl("-n", testNamespace, "delete", "pvc", pvcName)
+		Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
 
 		// create Pod with smaller request
 		resources = createPodPVC(resources, pvcName, sc, mode, pvcName, newRequest, limit, threshold, inodesThreshold, increase, storageLimit)
+		// stdout, stderr, err = kubectl("-n", testNamespace, "get", "pv")
+		// Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
+		// var pv corev1.PersistentVolume
+		// err = json.Unmarshal(stdout, &pv)
+		// Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
 
 		// cs := regexp.MustCompile(`\s+`).Split(string(lines[1]), -1)
 		// capacityInode, err = strconv.ParseInt(cs[1], 10, 64)
