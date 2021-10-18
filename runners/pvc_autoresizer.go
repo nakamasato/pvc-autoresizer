@@ -177,7 +177,7 @@ func (w *pvcAutoresizer) resize(ctx context.Context, pvc *corev1.PersistentVolum
 			// lint:ignore nilerr ignores this because invalid annotations should be allowed.
 			return nil
 		}
-		if preCapInt64 == vs.CapacityBytes {
+		if preCapInt64 == vs.CapacityBytes && curReq.Value() > vs.CapacityBytes {
 			log.Info("waiting for resizing...", "capacity", vs.CapacityBytes)
 			return nil
 		}
@@ -204,7 +204,7 @@ func (w *pvcAutoresizer) resize(ctx context.Context, pvc *corev1.PersistentVolum
 		}
 
 		pvc.Spec.Resources.Requests[corev1.ResourceStorage] = *newReq
-		pvc.Annotations[PreviousCapacityBytesAnnotation] = strconv.FormatInt(newReqBytes, 10)
+		pvc.Annotations[PreviousCapacityBytesAnnotation] = strconv.FormatInt(vs.CapacityBytes, 10)
 		err = w.client.Update(ctx, pvc)
 		if err != nil {
 			metrics.KubernetesClientFailTotal.Increment()
