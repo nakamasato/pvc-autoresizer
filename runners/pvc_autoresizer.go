@@ -204,7 +204,7 @@ func (w *pvcAutoresizer) resize(ctx context.Context, pvc *corev1.PersistentVolum
 		}
 
 		pvc.Spec.Resources.Requests[corev1.ResourceStorage] = *newReq
-		pvc.Annotations[PreviousCapacityBytesAnnotation] = strconv.FormatInt(vs.CapacityBytes, 10)
+		pvc.Annotations[PreviousCapacityBytesAnnotation] = strconv.FormatInt(newReqBytes, 10)
 		err = w.client.Update(ctx, pvc)
 		if err != nil {
 			metrics.KubernetesClientFailTotal.Increment()
