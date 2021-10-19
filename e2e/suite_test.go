@@ -355,13 +355,14 @@ var _ = Describe("pvc-autoresizer", func() {
 		resources = createPodPVC(resources, pvcName, sc, mode, pvcName, newRequest, limit, threshold, inodesThreshold, increase, storageLimit)
 		stdout, stderr, err = kubectl("-n", testNamespace, "get", "pvc", pvcName)
 		Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
-		var pvc corev1.PersistentVolumeClaim
-		err = json.Unmarshal(stdout, &pvc)
-		Expect(err).ShouldNot(HaveOccurred())
 
-		requestInPVC := pvc.Spec.Resources.Requests.Storage().String()
-		capacityInPVC := pvc.Status.Capacity.Storage().String()
-		Expect(requestInPVC).Should(Equal(capacityInPVC))
+		// var pvc corev1.PersistentVolumeClaim
+		// err = json.Unmarshal(stdout, &pvc)
+		// Expect(err).ShouldNot(HaveOccurred())
+
+		// requestInPVC := pvc.Spec.Resources.Requests.Storage().String()
+		// capacityInPVC := pvc.Status.Capacity.Storage().String()
+		// Expect(requestInPVC).Should(Equal(capacityInPVC))
 
 		// Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
 
@@ -373,8 +374,8 @@ var _ = Describe("pvc-autoresizer", func() {
 		// Expect(capacityInode).ShouldNot(Equal(int64(0)))
 		// Expect(availableInode).ShouldNot(Equal(int64(0)))
 
-		// By("checking the disk does not resize")
-		// checkDoesNotResize(pvcName, request)
+		By("checking the disk does not resize")
+		checkDoesNotResize(pvcName, newRequest)
 
 		// By("create files for consume an inodes")
 		// rate, err := strconv.ParseFloat(strings.TrimRight(inodesThreshold, "%"), 64)
