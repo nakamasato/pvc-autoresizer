@@ -353,10 +353,16 @@ var _ = Describe("pvc-autoresizer", func() {
 
 		// create Pod with smaller request
 		resources = createPodPVC(resources, pvcName, sc, mode, pvcName, newRequest, limit, threshold, inodesThreshold, increase, storageLimit)
-		// stdout, stderr, err = kubectl("-n", testNamespace, "get", "pv")
-		// Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
-		// var pv corev1.PersistentVolume
-		// err = json.Unmarshal(stdout, &pv)
+		stdout, stderr, err = kubectl("-n", testNamespace, "get", "pvc", pvcName)
+		Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
+		var pvc corev1.PersistentVolumeClaim
+		err = json.Unmarshal(stdout, &pvc)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		requestInPVC := pvc.Spec.Resources.Requests.Storage().String()
+		capacityInPVC := pvc.Status.Capacity.Storage().String()
+		Expect(requestInPVC).Should(Equal(capacityInPVC))
+
 		// Expect(err).ShouldNot(HaveOccurred(), "stdout=%s, stderr=%s", stdout, stderr)
 
 		// cs := regexp.MustCompile(`\s+`).Split(string(lines[1]), -1)
