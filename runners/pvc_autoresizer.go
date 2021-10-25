@@ -177,7 +177,7 @@ func (w *pvcAutoresizer) resize(ctx context.Context, pvc *corev1.PersistentVolum
 			// lint:ignore nilerr ignores this because invalid annotations should be allowed.
 			return nil
 		}
-		if preCapInt64 == vs.CapacityBytes {
+		if preCapInt64 == vs.CapacityBytes && curReq.Value() > vs.CapacityBytes {
 			log.Info("waiting for resizing...", "capacity", vs.CapacityBytes)
 			return nil
 		}
